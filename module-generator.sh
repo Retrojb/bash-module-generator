@@ -1,10 +1,51 @@
 #!/bin/bash
 
+# DESCRIPTION
+# Script to create a monorepo environment fully configured but not nearly as bloated
+# as a npx create-turbo@latest or npx create-lerna@latest
+# Grant the user a way to add and setup base configuration for common tools
+# in a javascript monorepo.
+#
+# Author: John "JB" Baltes (retrojb)
+# Created: 12/02/2023
+# Last Modified: 12/20/2023
+
+# Project Scope
+# Enter a package name
+    # Converted to Kebab and Pascal cases (Kebab - Package Manager, Pascal - Directory Stucture)
+        # Could give the user the choice for how to create their directory structure (kebab or pascal)
+# Select which package manager (NPM || YARN)
+    # If Yarn execute a yarn select version to use Fx
+# Select a language (TS || JS)
+    # if TS, then generate tsconfig and add Typescript to dependency array.
+# Select the type of package to create (React | React Native | Utility | React Component )
+    # if just a regular React or React Native just create Component, prop, __tests__/ and index with proper JSX
+    # if with storybook  add a __stories__ and create the Story and Docs file.
+        # could have this update the /.storybook/main.js file
+# Create the package structure passed (assigned by package to create)
+# Ask if they want security built in (audit-ci)
+# Ask if ESLint, Prettier.
+# Create a .gitignore and ignore the required files
+# Install the required dependencies.
 
 ####################################################################################
 ### Utils
 ####################################################################################
-NPM_DEP_ARR=("react")
+# Script current scope is creating React / React Native monorepos
+NPM_DEP_ARR=("react" "react-native" "react-dom" "react-native-web" "react-native-svg")
+NPM_DEV_DEP_ARR=("")
+
+add_to_dep_arr() {
+    NPM_DEP_ARR+=("$@")
+}
+
+add_to_dev_dep_arr() {
+    NPM_DEV_DEP_ARR+=("$@")
+}
+
+#TODO: Add changeset, add rollup option, changeset, commit linting
+CONFIG_OPTIONS=("AuditCI" "BuilderBob" "ESLint" "Prettier" "Turbo" "Lerna" "GithubActions")
+CONFIG_CHOICES=()
 
 reset="\033[0m"
 highlight="\033[41m\033[97m"
@@ -23,7 +64,7 @@ print_red() {
 }
 
 print_green() {
-  _print_in_color "${indent} $1" 2
+  _print_in_color "$1" 2
 }
 
 print_yellow() {
@@ -43,7 +84,7 @@ print_white() {
 }
 
 print_question() {
-  print_yellow" [?] $1\n"
+  print_yellow " [?] $1 \n"
 }
 
 _print_in_color() {
@@ -53,10 +94,7 @@ _print_in_color() {
     "$(tput sgr0 2> /dev/null)"
 }
 
-add_to_dep_arr() {
-    NPM_DEP_ARR+=("$@")
-}
-
+# TODO: Add support for camel casing
 convert_to_pascal_case() {
     local input=$1
     local pascalCase=""
@@ -82,29 +120,17 @@ convert_to_kebab_case() {
     echo "$kebab_case"
 }
 
-
-# Create module structure
-create_module_structure() {
-    mkdir $PACKAGE_NAME && cd $PACKAGE_NAME
-    touch index.${LANGUAGE}
-    print_white "created index.${LANGUAGE} \n"
-    mkdir src
-    print_white "created src \n"
-    touch src/index.${LANGUAGE}
-    print_white "created src/index.${LANGUAGE} \n"
-    touch src/$PACKAGE_NAME.${LANGUAGE}x
-    print_white "created src/$PACKAGE_NAME.${LANGUAGE}x \n"
-    touch src/${PACKAGE_NAME}Props.${LANGUAGE}x
-    print_white "created src/${PACKAGE_NAME}Props.${LANGUAGE}x \n "
-    print_green "\t Successfully created $PACKAGE_NAME \n" 
-}
- 
 ####################################################################################
 ### Steak and Potatoes
 ####################################################################################
+
+# Allows user to set the file case of the directory and files
+# PascalCasing - package.json will not reflect this casing.
+# Kebab-Casing
+# TODO: Add snake_casing and camelCasing
 set_file_case() {
     file_casings=("Pascal" "Kebab")
-    print_yellow "What casing would you like to use for directory structure \n"
+    print_question "What casing would you like to use for directory & file structure"
     select file_casing in "${file_casings[@]}"; do
         case $file_casing in
             "Pascal")
@@ -122,18 +148,53 @@ set_file_case() {
     done
 }
 
-#  Select the dependency manager 
+# Create the root of the monorepo
+create_project_root() {
+    mkdir "$PACKAGE_NAME"
+    print_green "Creating $PACKAGE_NAME \n"
+    # shellcheck disable=SC2164
+    cd "$PACKAGE_NAME"
+    mkdir apps
+    mkdir bin
+    mkdir packages
+    mkdir packages/utils
+}
+
+
+# Create module structure
+create_module_structure() {
+    mkdir "$PACKAGE_NAME"
+    cd "$PACKAGE_NAME" || exit
+
+
+#    touch src/index.${LANGUAGE}
+#    print_white "created src/index.${LANGUAGE} \n"
+#    touch src/$PACKAGE_NAME.${LANGUAGE}x
+#    print_white "created src/$PACKAGE_NAME.${LANGUAGE}x \n"
+#    touch src/${PACKAGE_NAME}Props.${LANGUAGE}x
+#    print_white "created src/${PACKAGE_NAME}Props.${LANGUAGE}x \n "
+#    print_green "\t Successfully created $PACKAGE_NAME \n"
+}
+
+#  Select the dependency manager and then drill into manager setup choices
+# NPM currently barebones setup
+# Support for yarn classic and yarn berry
+# TODO: add PNPM
 set_dep_manager() {
     dep_man_choices=("NPM" "Yarn")
-    print_yellow "\nPlease select a Package Manager: \n"
+    print_question "Please select a Package Manager: "
     select dep_man_choice in "${dep_man_choices[@]}"; do
         case $dep_man_choice in
             "NPM")
-                # run_npm_setup
+                create_project_root
+                set_language
+                run_npm_setup
                 break
                 ;;
             "Yarn")
-                # run_yarn_setup
+                create_project_root
+                set_language
+                run_yarn_setup
                 break
                 ;;
             *)
@@ -145,36 +206,39 @@ set_dep_manager() {
 DEP_MANAGER=$dep_man_choice
 }
 
+# TODO: Finalize the NPM setup
 run_npm_setup() {
     print_purple "Setting up NPM"
+    print_blue "Follow the NPM setup"
+    npm init
 }
 
 run_yarn_setup() {
-    print_purple "Setting up Yarn"
-    yarn init && set name $PACKAGE_NAME_KEBAB
-    # set_yarn_version
+    print_purple "\n Setting up Yarn \n"
+    set_yarn_version
+    yarn init
 }
 
 set_yarn_version() {
-    dep_version_choices=("Classic" "Berry 3" "Berry Latest")
-    print_yellow "\n Please select a Package Manager: \n"
+    dep_version_choices=("Classic" "Berry")
+    print_question "Please select a Package Manager:"
     select dep_version_choice in "${dep_version_choices[@]}"; do
         case $dep_version_choice in
             "Classic")
                 print_success "$dep_version_choice \n"
                 break
                 ;;
-            "Berry 3")
-                print_success "$dep_version_choice \n"
-                version_num=3
-                set_yarn_berry $version_num
-                break
-                ;;
-            "Berry Latest")
-                print_success "$dep_version_choice \n" 
-                version_num="stable"
-                set_yarn_berry
-                break
+            "Berry")
+                print_green "$dep_version_choice \n"
+                print_question "Use PnP? [y/N]: "
+                read -r use_pnp
+                if [[ $use_pnp == 'N' || $use_pnp == 'n' ]]; then
+                  set_yarn_berry
+                  break
+                else
+                  yarn set version stable
+                  break
+                fi
                 ;;
             *)
                 print_red "Invalid Choice"
@@ -185,17 +249,19 @@ set_yarn_version() {
 DEP_VERSION=$dep_version_choice
 }
 
+# TODO: Allow the PnP be an option to use nodeLinker
 set_yarn_berry() {
-yarn set version $version
+yarn set version stable
 touch .yarnrc.yml
 cat > .yarnrc.yml << EOF
     nodeLinker: node-modules
 EOF
 }
 
+# Set the repos JS flavor and create any required configurations
 set_language() {
     language_choices=("Javascript" "Typescript")
-    print_yellow "\n Please select a language: \n"
+    print_question "Please select a language: "
     select language_choice in "${language_choices[@]}"; do
         case $language_choice in
             "Javascript")
@@ -204,7 +270,7 @@ set_language() {
                 ;;
             "Typescript")
                 LANGUAGE="ts"
-                IS_TS=true
+                create_tsconfig
                 break
                 ;;
             *)
@@ -213,9 +279,10 @@ set_language() {
     done
 }
 
+# TODO: Once module creation script is built update this
 set_module_type() {
-    module_type_choices=("React Component" "React Component with Storybook", "Utility Module")
-    print_yellow "\n Please select a Package Manager: \n"
+    module_type_choices=("React Component" "React Component with Storybook" "Utility Module")
+    print_question "Please select a Package Manager:"
     select dep_man_choice in "${dep_man_choices[@]}"; do
         case $dep_man_choice in
             "React Component")
@@ -239,39 +306,173 @@ set_module_type() {
 DEP_MANAGER=$dep_man_choice
 }
 
+####################################################################################
+### Configurations Setup
+####################################################################################
+select_options() {
+    print_question "Select configurations (enter the number of each option, separated by spaces):"
+
+    # Display options
+    for i in "${!CONFIG_OPTIONS[@]}"; do
+        printf "%s) %s\n" "$((i + 1))" "${CONFIG_OPTIONS[$i]}"
+    done
+    read -ra SELECTED_OPTIONS
+    for option in "${SELECTED_OPTIONS[@]}"; do
+        CONFIG_CHOICES+=("${CONFIG_OPTIONS[$((option - 1))]}")
+    done
+}
+
+confirm_selections() {
+    for choice in "${CONFIG_CHOICES[@]}"; do
+        if [[ "$choice" == "AuditCI" ]]; then
+          print_blue "Creating Audit CI config \n"
+          add_to_dev_dep_arr "audit-ci"
+          sleep 1
+          create_auditci
+        elif [[ "$choice" == "Turbo" ]]; then
+          print_blue "Adding Turbo monorepo support"
+          add_to_dev_dep_arr "turbo"
+          sleep 1
+          create_turbo
+        elif [[ "$choice" == "BuilderBob" ]]; then
+           print_blue "Adding Turbo monorepo support"
+          add_to_dev_dep_arr "react-native-builder-bob"
+        elif [[ "$choice" == "ESLint" ]]; then
+           print_blue "Adding eslint"
+          add_to_dev_dep_arr "eslint"
+          create_eslint
+        elif [[ "$choice" == "Prettier" ]]; then
+           print_blue "Adding prettier"
+          add_to_dev_dep_arr "prettier"
+          create_prettier
+        elif [[ "$choice" == "GithubActions" ]]; then
+           print_blue "Adding Github Actions"
+          create_gh_actions
+        elif [[ "$choice" == "Lerna" ]]; then
+          print_blue "Adding Lerna monorepo support"
+          add_to_dev_dep_arr "lerna"
+          create_lerna
+        fi
+
+         print_blue "Finished adding project configurations \n"
+    done
+}
+
+set_configs() {
+  select_options
+  confirm_selections
+}
+
+# IF $LANGUAGE = 'ts'
 create_tsconfig() {
-add_to_dep_arr "typescript"
+add_to_dev_dep_arr "typescript"
 touch tsconfig.json
 cat > tsconfig.json <<EOF
 {
-    "extends": "tsconfig/base.json",
     "compilerOptions": {
-        "jsx": "react",
+        "allowJs": true,
+        "strict": true,
+        "allowImportingTsExtensions": true,
+        "skipLibCheck": true,
         "baseUrl": ".",
         "paths": {
             "apps/*": ["apps/*"],
-            "packages/utils/*: ["utils/*]
+            "packages/utils/*": ["utils/*"]
         }
-    }
+    },
     "exclude": ["node_modules", "lib", "dist"]
 }
 EOF
 }
 
+# IF $choices == 'auditci'
 create_auditci() {
-add_to_dep_arr "audit-ci"
-    touch audit-ci.jsonc
-    cat > audit-ci.jsonc <<EOF
-   {
-	"\$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
-	"moderate": true,
-	"registry": "https://registry.npmjs.org"
-    }
+touch audit-ci.jsonc
+cat > audit-ci.jsonc <<EOF
+ {
+    "\$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+    "moderate": true,
+    "registry": "https://registry.npmjs.org"
+  }
 EOF
 }
 
-is_rn_Builder_BOB() {
-cat <<EOF
+# IF $choices == 'turbo'
+create_turbo() {
+touch turbo.json
+cat > turbo.json <<EOF
+{
+	"\$schema": "https://turbo.build/schema.json",
+	"globalDependencies": ["**/.env.*local"],
+	"pipeline": {
+		"build": {
+			"dependsOn": ["^build"],
+			"outputs": ["lib/", "dist/"],
+			"cache": false
+		},
+		"lint": {},
+		"pack:foo": {
+			"dependsOn": ["^build"]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		}
+	}
+}
+EOF
+}
+
+#TODO: Setup eslint
+create_eslint() {
+  print_white "$choice - Creating $choice"
+}
+
+create_prettier() {
+touch .prettierrc
+cat >> .prettierrc <<EOT
+{
+	"quoteProps": "consistent",
+	"singleQuote": true,
+	"trailingComma": "es5",
+	"tabWidth": 2
+}
+
+EOT
+}
+
+# TODO: Setup lerna support
+create_lerna() {
+  print_white "$choice - Creating $choice"
+}
+
+create_npmignore() {
+cat >> .npmignore <<EOT
+apps/
+bin/
+.github/
+.idea/
+.turbo/
+.yarn/
+.editorconfig
+.npmrc
+.yarnrc.yml
+audit-ci.jsonc
+turbo.json
+EOT
+}
+# TODO: continue GHA setup
+create_gh_actions() {
+  mkdir .github
+  touch .github/main.yml
+  mkdir .github/workflows
+  touch .github/workflows/pullrequest.yml
+}
+
+#TODO: move this create into the create modules
+# This will only be used in packages.
+create_builder_bob() {
+cat>> package.json <<EOF
     "react-native-builder-bob": {
         "source": "src",
         "output": "lib",
@@ -286,17 +487,24 @@ cat <<EOF
         ]
         ]
     }
+}
 EOF
 }
 
 modify_package_json() {
-cat < package.json <<EOF
+yarn_version=$(yarn -v)
+cat > package.json <<EOF
    {
     "name": "${PACKAGE_NAME_KEBAB}",
     "description": "${PACKAGE_NAME_KEBAB}",
     "version": "0.0.1",
-    "packageManager": "yarn@3.6.4",
-    "license": "UNLICESEND",
+    "packageManager": "yarn@${yarn_version}",
+    "license": "UNLICENSED",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
     "main": "lib/commonjs/index.js",
     "module": "lib/module/index.js",
     "react-native": "src/index.ts",
@@ -311,54 +519,65 @@ cat < package.json <<EOF
     ],
     "scripts": {
         "build": "bob build",
-        "lint": "eslint \"**/*.{js,ts,tsx}\""
-    },
+        "lint": "eslint ./src"
+    }
+}
 EOF
-
-    if [[ $USE_BUILDER_BOB == "yes" ]]; then
-        is_rn_Builder_BOB >> package.json
-    fi
-
-    # Finish the JSON structure
-    echo "}" >> package.json
 }
 
-execute() {
-print_purple "Monorepo package generator \n"
-print_yellow "What would you like to name your package: "
-read MODULE_NAME
+modify_git_ignore() {
+cat >> .gitignore <<EOT
+# Monorepo Specific
+node_modules
+.turbo/
+dist/
+lib/
 
-PACKAGE_NAME_PASCAL=$(convert_to_pascal_case "$MODULE_NAME")
-PACKAGE_NAME_KEBAB=$(convert_to_kebab_case "$MODULE_NAME")
+EOT
+}
 
-set_file_case
-set_dep_manager
-set_language
-create_module_structure
-if [[ $DEP_MANAGER == "Yarn" ]]; then
-    run_yarn_setup
-fi
-
-if [[ $LANGUAGE == "ts" ]]; then
+create_utils_package() {
+  cd packages/utils
+  mkdir src
+  yarn init
+  if [[ $LANGUAGE == "ts" ]]; then
     create_tsconfig
-fi
+    touch src/index.ts
+    echo "export {};" >> src/index.ts
+  elif [[ $LANGUAGE == "js" ]]; then
+    touch src/index.js
+    echo "module.exports = {};" >> src/index.js
+  fi
+
+  if [[ $choice == "BuilderBob" ]]; then
+    modify_package_json
+  fi
+}
+
+####################################################################################
+### Execution
+####################################################################################
+
+execute() {
+  print_purple "Monorepo package generator \n"
+  print_question "What would you like to name your package: "
+  read -r MODULE_NAME
+  # Here to make sure that the package.json name is in kebab case
+  PACKAGE_NAME_KEBAB=$(convert_to_kebab_case "$MODULE_NAME")
+  PACKAGE_NAME_PASCAL=$(convert_to_pascal_case "$MODULE_NAME")
+  set_file_case
+  set_dep_manager
+  set_configs
+  modify_package_json
+  # shellcheck disable=SC2068
+  yarn add ${NPM_DEP_ARR[@]}
+  if [[ "${#NPM_DEV_DEP_ARR[@]}" -ge 1 ]]; then
+    # shellcheck disable=SC2068
+    yarn add ${NPM_DEV_DEP_ARR[@]} -D
+  fi
+  modify_git_ignore
+  create_npmignore
+  create_utils_package
 }
 
 execute
-
-# Enter a package name
-    # Converted to Kebab and Pascal cases (Kebab - Package Manager, Pascal - Directory Stucture)
-        # Could give the user the choice for how to create their directory structure (kebab or pascal)
-# Select which package manager (NPM || YARN)
-    # If Yarn execute a yarn select version to use Fx
-# Select a language (TS || JS)
-    # if TS, then generate tsconfig and add Typescript to dependency array.    
-# Select the type of package to create (React | React Native | Utility | React Component )
-    # if just a regular React or React Native just create Component, prop, __tests__/ and index with proper JSX
-    # if with storybook  add a __stories__ and create the Story and Docs file.
-        # could have this update the /.storybook/main.js file
-# Create the package structure passed (assigned by package to create)
-# Ask if they want security built in (audit-ci)
-# Ask if ESLint, Prettier.
-# Create a .gitignore and ignore the required files
-# Install the required dependencies. 
