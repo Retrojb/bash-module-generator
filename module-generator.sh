@@ -1,5 +1,6 @@
 #!/bin/bash
 
+source utils.sh
 # DESCRIPTION
 # Script to create a monorepo environment fully configured but not nearly as bloated
 # as a npx create-turbo@latest or npx create-lerna@latest
@@ -10,23 +11,7 @@
 # Created: 12/02/2023
 # Last Modified: 12/20/2023
 
-# Project Scope
-# Enter a package name
-    # Converted to Kebab and Pascal cases (Kebab - Package Manager, Pascal - Directory Stucture)
-        # Could give the user the choice for how to create their directory structure (kebab or pascal)
-# Select which package manager (NPM || YARN)
-    # If Yarn execute a yarn select version to use Fx
-# Select a language (TS || JS)
-    # if TS, then generate tsconfig and add Typescript to dependency array.
-# Select the type of package to create (React | React Native | Utility | React Component )
-    # if just a regular React or React Native just create Component, prop, __tests__/ and index with proper JSX
-    # if with storybook  add a __stories__ and create the Story and Docs file.
-        # could have this update the /.storybook/main.js file
-# Create the package structure passed (assigned by package to create)
-# Ask if they want security built in (audit-ci)
-# Ask if ESLint, Prettier.
-# Create a .gitignore and ignore the required files
-# Install the required dependencies.
+
 
 ####################################################################################
 ### Utils
@@ -47,78 +32,7 @@ add_to_dev_dep_arr() {
 CONFIG_OPTIONS=("AuditCI" "BuilderBob" "ESLint" "Prettier" "Turbo" "Lerna" "GithubActions")
 CONFIG_CHOICES=()
 
-reset="\033[0m"
-highlight="\033[41m\033[97m"
-dot="\033[31m $reset"
-dim="\033[2m"
-blue="\e[34m"
-green="\e[32m"
-yellow="\e[33m"
-green_tag="\e[30;46m"
-blue_tag="\e[38;5;33m"
-bold=$(tput bold)
-normal=$(tput sgr0)
 
-print_red() {
-  _print_in_color "$1" 1
-}
-
-print_green() {
-  _print_in_color "$1" 2
-}
-
-print_yellow() {
-  _print_in_color "$1" 3
-}
-
-print_blue() {
-  _print_in_color "$1" 4
-}
-
-print_purple() {
-  _print_in_color "$1" 5
-}
-
-print_white() {
-  _print_in_color "$1" 6
-}
-
-print_question() {
-  print_yellow " [?] $1 \n"
-}
-
-_print_in_color() {
-  printf "%b" \
-    "$(tput setaf "$2" 2> /dev/null)" \
-    "$1" \
-    "$(tput sgr0 2> /dev/null)"
-}
-
-# TODO: Add support for camel casing
-convert_to_pascal_case() {
-    local input=$1
-    local pascalCase=""
-    IFS=' ' # Internal Field Separator set to space
-
-    read -r -a words <<< "$input"
-
-    for word in "${words[@]}"; do
-        firstLetter=$(echo ${word:0:1} | tr '[:lower:]' '[:upper:]')
-        restOfWord=${word:1}
-        pascalCase+="${firstLetter}${restOfWord}"
-    done
-
-    echo "$pascalCase"
-}
-
-convert_to_kebab_case() {
-    local input=$1
-    local kebab_case=""
-
-    kebab_case="${input// /-}"
-    kebab_case=$(echo "$kebab_case" | tr '[:upper:]' '[:lower:]')
-    echo "$kebab_case"
-}
 
 ####################################################################################
 ### Steak and Potatoes
