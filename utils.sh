@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 reset="\033[0m"
 highlight="\033[41m\033[97m"
 dot="\033[31m $reset"

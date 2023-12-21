@@ -45,9 +45,16 @@ tsconfig files in the root and any sub packages.
 ## Coming Soon
 ### Create modules AoT with support for:
 #### React
+Vite
+CRA
 #### React Native
+Expo
+React Native Bare Flow
 #### React Native Web
-#### Storybook
+Support React Native on web
+#### Storybook - For Component Library component
+React v6 & v7
+React Native
 
 --- 
 
