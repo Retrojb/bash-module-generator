@@ -11,8 +11,6 @@ source utils.sh
 # Created: 12/02/2023
 # Last Modified: 12/20/2023
 
-
-
 ####################################################################################
 ### Utils
 ####################################################################################
@@ -32,26 +30,28 @@ add_to_dev_dep_arr() {
 CONFIG_OPTIONS=("AuditCI" "BuilderBob" "ESLint" "Prettier" "Turbo" "Lerna" "GithubActions")
 CONFIG_CHOICES=()
 
-
-
 ####################################################################################
 ### Steak and Potatoes
 ####################################################################################
 
-# Allows user to set the file case of the directory and files
-# PascalCasing - package.json will not reflect this casing.
-# Kebab-Casing
-# TODO: Add snake_casing and camelCasing
 set_file_case() {
-    file_casings=("Pascal" "Kebab")
+    file_casings=("PascalCase" "Kebab-Case" "camelCase" "snake_case")
     print_question "What casing would you like to use for directory & file structure"
     select file_casing in "${file_casings[@]}"; do
         case $file_casing in
-            "Pascal")
+            "PascalCase")
                 PACKAGE_NAME=$(convert_to_pascal_case "$MODULE_NAME")
                 break
                 ;;
-            "Kebab")
+            "Kebab-Case")
+                PACKAGE_NAME=$(convert_to_kebab_case "$MODULE_NAME")
+                break
+                ;;
+            "camelCase")
+                PACKAGE_NAME=$(convert_to_kebab_case "$MODULE_NAME")
+                break
+                ;;
+            "snake_case")
                 PACKAGE_NAME=$(convert_to_kebab_case "$MODULE_NAME")
                 break
                 ;;

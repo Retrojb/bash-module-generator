@@ -1,13 +1,14 @@
 # Retrojb/bash-monorepo-generator
 
 ## Project Scope:
-
+This project is the result of my year building Monorepos for Design Systems, 
+be warned that this is written with bias for Design Systems in mind.
 Create a new monorepo in seconds, this script will help execute the following
 
 --- 
 ### Casing Conversions:  (utils.sh)
 - Kebab-Case - Stores a local var to be used in the package.json
-- PascalCase - Directory Stucture
+- PascalCase - Directory Structure
 - camelCase - Directory Structure / file naming choice
 - snake_case - Because why not have it as an option
 
@@ -29,10 +30,10 @@ Generates a project based on your language of choice. Typescript creates base
 tsconfig files in the root and any sub packages.
 
 ### Configuration base setup for the following commonly used NPM dependencies
-- Audit CI  
-- CallStacks React Native Builder Bob
-- TurboRepo
-- Prettier
+- [Audit CI](https://github.com/IBM/audit-ci)  
+- CallStacks [React Native Builder Bob](https://github.com/callstack/react-native-builder-bob)
+- [TurboRepo](https://turbo.build/repo/docs)
+- [Prettier](https://prettier.io/)
 - WIP: Github Actions
 - WIP: Lerna
 - WIP:ESLint
