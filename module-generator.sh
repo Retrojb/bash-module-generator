@@ -1,9 +1,7 @@
 #!/bin/bash
 
 source utils.sh
-source directory-factory.sh
-source mono-config-setup.sh
-source generate-monorepo.sh
+
 # DESCRIPTION
 # Script to create a monorepo environment fully configured but not nearly as bloated
 # as a npx create-turbo@latest or npx create-lerna@latest
