@@ -1,21 +1,7 @@
-#!/bin/bash
+#!/bin/zsh
 
 source utils.sh
 
-# DESCRIPTION
-# Script to create a monorepo environment fully configured but not nearly as bloated
-# as a npx create-turbo@latest or npx create-lerna@latest
-# Grant the user a way to add and setup base configuration for common tools
-# in a javascript monorepo.
-#
-# Author: John "JB" Baltes (retrojb)
-# Created: 12/02/2023
-# Last Modified: 12/20/2023
-
-####################################################################################
-### Utils
-####################################################################################
-# Script current scope is creating React / React Native monorepos
 NPM_DEP_ARR=("react" "react-native" "react-dom" "react-native-web" "react-native-svg")
 NPM_DEV_DEP_ARR=("")
 
@@ -26,33 +12,38 @@ add_to_dep_arr() {
 add_to_dev_dep_arr() {
     NPM_DEV_DEP_ARR+=("$@")
 }
+#######################################
+# Creates a package/ module directory structure
+# Globals:
+#   $DIR_TO_CREATE_IN
+#   $SUB_PACKAGE_NAME - TODO: update this name
+# Arguments:
+#   None
+#######################################
+create_module_structure() {
+    echo "In Create Module Structure"
+    mkdir "$PACKAGE_NAME"
+    cd "$PACKAGE_NAME" || exit
+    mkdir src
+    yarn init
+    if [[ $LANGUAGE == "ts" ]]; then
+      create_tsconfig
+      touch src/index.ts
+      echo "export {};" >> src/index.ts
+    elif [[ $LANGUAGE == "js" ]]; then
+      touch src/index.js
+      echo "module.exports = {};" >> src/index.js
+    fi
 
-# TODO: Once module creation script is built update this
-set_module_type() {
-    module_type_choices=("React Component" "React Component with Storybook" "Utility Module")
-    print_question "Please select a Package Manager:"
-    select dep_man_choice in "${dep_man_choices[@]}"; do
-        case $dep_man_choice in
-            "React Component")
-                print_blue "$dep_man_choice \n"
-                break
-                ;;
-            "React Component with Storybook")
-                print_blue "$dep_man_choice \n"
-                break
-                ;;
-            "Utility Module")
-                print_blue "$dep_man_choice \n"
-                break
-                ;;
-            *)
-                print_red "Invalid Choice \n"
-                ;;
-        esac
-    done
-
-DEP_MANAGER=$dep_man_choice
+    touch src/index."${LANGUAGE}"
+    print_white "created src/index.${LANGUAGE} \n"
+    touch src/"$PACKAGE_NAME".${LANGUAGE}x
+    print_white "created src/$PACKAGE_NAME.${LANGUAGE}x \n"
+    touch src/${PACKAGE_NAME}Props.${LANGUAGE}x
+    print_white "created src/${PACKAGE_NAME}Props.${LANGUAGE}x \n "
+    print_green "\t Successfully created $PACKAGE_NAME \n"
 }
+
 
 create_app() {
   print_purple "Creating and app in $module_dir_choice"
@@ -71,13 +62,13 @@ set_module_directory() {
         case $module_dir_choice in
             "apps")
                 print_blue "$module_dir_choice \n"
-                cd $module_dir_choice
+                cd ../$module_dir_choice
                 create_app
                 break
                 ;;
             "packages")
                 print_blue "$module_dir_choice \n"
-                cd $module_dir_choice
+                cd ../$module_dir_choice
                 create_package
                 break
                 ;;
@@ -89,25 +80,147 @@ set_module_directory() {
 
 DIR_TO_CREATE_IN=$module_dir_choice
 }
+#######################################
+# For ignoring when publishing
+#######################################
+create_npmignore() {
+cat >> .npmignore <<EOT
+apps/
+bin/
+.github/
+.idea/
+.turbo/
+.yarn/
+.editorconfig
+.npmrc
+.yarnrc.yml
+audit-ci.jsonc
+turbo.json
+EOT
+}
+
+#######################################
+# Adds builder bob configuration to package.json
+# TODO:
+#   move this create into the create modules
+# Note:
+#   This will only be used in packages.
+#######################################
+create_builder_bob() {
+cat>> package.json <<EOF
+    "react-native-builder-bob": {
+        "source": "src",
+        "output": "lib",
+        "targets": [
+        "commonjs",
+        "module",
+        [
+            "typescript",
+            {
+            "tsc": "../../node_modules/.bin/tsc"
+            }
+        ]
+        ]
+    }
+}
+EOF
+}
+
+#######################################
+# Modifies the package.json
+#######################################
+modify_package_json() {
+yarn_version=$(yarn -v)
+cat > package.json <<EOF
+   {
+    "name": "${PACKAGE_NAME_KEBAB}",
+    "description": "${PACKAGE_NAME_KEBAB}",
+    "version": "0.0.1",
+    "packageManager": "yarn@${yarn_version}",
+    "license": "UNLICENSED",
+    "main": "lib/commonjs/index.js",
+    "module": "lib/module/index.js",
+    "react-native": "src/index.ts",
+    "types": "lib/typescript/index.d.ts",
+    "source": "index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "lib",
+        "src"
+    ],
+    "scripts": {
+        "build": "bob build",
+        "lint": "eslint ./src"
+    },
+EOF
+}
+
+#######################################
+# Modify the .gitignore generated with
+# a yarn project
+#######################################
+modify_git_ignore() {
+cat >> .gitignore <<EOT
+# Monorepo Specific
+node_modules
+.turbo/
+dist/
+lib/
+
+EOT
+}
+
+#######################################
+# Generate TS config file
+#######################################
+create_tsconfig() {
+add_to_dev_dep_arr "typescript"
+touch tsconfig.json
+cat > tsconfig.json <<EOF
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "strict": true,
+        "allowImportingTsExtensions": true,
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "paths": {
+            "apps/*": ["apps/*"],
+            "packages/utils/*": ["utils/*"]
+        }
+    },
+    "exclude": ["node_modules", "lib", "dist"]
+}
+EOF
+}
+
 ####################################################################################
 ### Execution
 ####################################################################################
 
-generate_module() {
+generate_package() {
+  print_purple "Create a new package \n"
   print_question "What would you like to name your package: "
-  read -r SUB_PACKAGE_NAME
-
-  # Here to make sure that the package.json name is in kebab case
-  PACKAGE_NAME_KEBAB=$(convert_to_kebab_case "$SUB_PACKAGE_NAME")
+  read -r PACKAGE_NAME
+  PACKAGE_NAME_KEBAB=$(convert_to_kebab_case "$PACKAGE_NAME")
+  set_language
   set_module_directory
   echo $PACKAGE_NAME_KEBAB
-#  set_configs
-#  modify_package_json
-#  yarn add ${NPM_DEP_ARR[@]}
-#  if [[ "${#NPM_DEV_DEP_ARR[@]}" -ge 1 ]]; then
-#    yarn add ${NPM_DEV_DEP_ARR[@]} -D
-#  fi
+
+  modify_package_json
+  # shellcheck disable=SC2068
+  yarn add ${NPM_DEP_ARR[@]}
+  if [[ "${#NPM_DEV_DEP_ARR[@]}" -ge 1 ]]; then
+    # shellcheck disable=SC2068
+    yarn add ${NPM_DEV_DEP_ARR[@]} -D
+  fi
+  modify_git_ignore
+  create_builder_bob
+  create_tsconfig
+  create_npmignore
 
 }
 
-generate_module
+generate_package

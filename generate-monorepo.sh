@@ -513,7 +513,7 @@ EOF
 }
 
 #######################################
-# Modifies the package.json
+# Modifies the root package.json
 #######################################
 modify_package_json() {
 yarn_version=$(yarn -v)
@@ -529,11 +529,6 @@ cat > package.json <<EOF
         "apps/*",
         "packages/*"
     ],
-    "main": "lib/commonjs/index.js",
-    "module": "lib/module/index.js",
-    "react-native": "src/index.ts",
-    "types": "lib/typescript/index.d.ts",
-    "source": "index.ts",
     "publishConfig": {
         "access": "public"
     },
@@ -542,7 +537,7 @@ cat > package.json <<EOF
         "src"
     ],
     "scripts": {
-        "build": "bob build",
+        "build": "turbo run build",
         "lint": "eslint ./src"
     }
 }
@@ -581,6 +576,7 @@ generate_monorepo() {
   print_purple "Monorepo package generator \n"
   print_question "What would you like to name your package: "
   read -r MODULE_NAME
+  cd ../../React-Native-Apps
   # Here to make sure that the package.json name is in kebab case
   PACKAGE_NAME_KEBAB=$(convert_to_kebab_case "$MODULE_NAME")
   set_file_case
